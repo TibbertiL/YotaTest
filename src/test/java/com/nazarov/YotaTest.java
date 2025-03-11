@@ -5,6 +5,8 @@ import com.nazarov.TestXML.Envelope;
 import com.nazarov.TestXML.FindCustomerBodyXML;
 import com.nazarov.TestXML.FindCustomerHeadXML;
 import com.nazarov.specification.Specification;
+import io.restassured.RestAssured;
+import io.restassured.parsing.Parser;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import jakarta.xml.bind.JAXBContext;
@@ -26,9 +28,9 @@ import static org.hamcrest.Matchers.notNullValue;
 public class YotaTest {
 
     private static final String URL = "http://localhost:8090/";
-    private static String token = "48cc6fbe3a1544d38df4486c43d886c1";
-    private static Long phone = 79284118516L;
-    private static String id = "fd4a6fd2-94b0-4515-88f5-c3ec677efa26";
+    private static String token = "0b646ed69189422597c98130f039d6a5";
+    private static Long phone = 79282812634L;
+    private static String id = "3bdc7ce1-9b06-4fc4-882c-9a0647657f2b";
 
     @Before
     public void setup(){
@@ -38,7 +40,7 @@ public class YotaTest {
             Specification.installSpecification(Specification.requestSpec(URL),
                     Specification.responseSpecOK200());
 
-            String login = "user";
+            String login = "admin";
 
             UserData userData = new UserData(login, "password");
 
@@ -114,31 +116,43 @@ public class YotaTest {
                 .extract().response();
     }
 
-    //@Test
+    @Test
     public void getCustomerByPhoneNumberTest() throws JAXBException {
         Specification.installSpecification(Specification.requestSpecXML(URL),
                 Specification.responseSpecOK200());
 
-        // Создаем объект Header и Body
-        FindCustomerHeadXML header = new FindCustomerHeadXML(token);
-        FindCustomerBodyXML body = new FindCustomerBodyXML(phone);
-
-        Envelope request = new Envelope(header, body);
-
-        JAXBContext context = JAXBContext.newInstance(Envelope.class);
-        Marshaller marshaller = context.createMarshaller();
-        StringWriter writer = new StringWriter();
-        marshaller.marshal(request, writer);
-
-        String xmlString = writer.toString();
-        System.out.println(xmlString);
+        String requestBody = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                "<ns3:Envelope xmlns:ns2=\"soap\" xmlns:ns3=\"http://schemas.xmlsoap.org/soap/envelope\">\n" +
+                "    <ns2:Header>\n" +
+                "        <authToken>" + token + "</authToken>\n" +
+                "    </ns2:Header>\n" +
+                "    <ns2:Body>\n" +
+                "        <phoneNumber>" + phone + "</phoneNumber>\n" +
+                "    </ns2:Body>\n" +
+                "</ns3:Envelope>";
+        RestAssured.registerParser("text/plain", Parser.XML);
+//        // Создаем объект Header и Body
+//        FindCustomerHeadXML header = new FindCustomerHeadXML(token);
+//        FindCustomerBodyXML body = new FindCustomerBodyXML(phone);
+//
+//        Envelope request = new Envelope(header, body);
+//
+//        JAXBContext context = JAXBContext.newInstance(Envelope.class);
+//        Marshaller marshaller = context.createMarshaller();
+//        StringWriter writer = new StringWriter();
+//        marshaller.marshal(request, writer);
+//
+//        String xmlString = writer.toString();
+//        System.out.println(xmlString);
 
         CustomerIdXML response = given()
-                .body(xmlString)
+                //.body(xmlString)
+                .header("Content-Type", "application/xml; charset=UTF-8")
+                .body(requestBody)
                 .log().all()
                 .when()
                 .post("customer/findByPhoneNumber")
-                .then().log().all()
+                .then().log().ifError()
                 .body("customerId", notNullValue())
                 .extract().as(CustomerIdXML.class);
     }
@@ -161,7 +175,7 @@ public class YotaTest {
                 .then().log().all();
     }
 
-    @Test
+    //@Test
     public void changeStatusUserTest(){
         Specification.installSpecification(Specification.requestSpec(URL),
                 Specification.responseSpecErrorCustom(401));

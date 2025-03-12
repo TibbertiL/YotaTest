@@ -1,22 +1,15 @@
 package com.nazarov;
 
-import com.nazarov.TestXML.CustomerIdXML;
-import com.nazarov.TestXML.Envelope;
-import com.nazarov.TestXML.FindCustomerBodyXML;
-import com.nazarov.TestXML.FindCustomerHeadXML;
 import com.nazarov.specification.Specification;
-import io.restassured.RestAssured;
-import io.restassured.parsing.Parser;
 import io.restassured.path.json.JsonPath;
+
+import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
-import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,13 +17,12 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.notNullValue;
 
-
 public class YotaTest {
 
     private static final String URL = "http://localhost:8090/";
-    private static String token = "0b646ed69189422597c98130f039d6a5";
-    private static Long phone = 79282812634L;
-    private static String id = "3bdc7ce1-9b06-4fc4-882c-9a0647657f2b";
+    private static String token = "0311198bc48a4beca50c4fec3372578f";
+    private static Long phone = 79281576462L;
+    private static String id = "d182db77-c2d5-42b9-9c11-6952386193c5";
 
     @Before
     public void setup(){
@@ -118,10 +110,8 @@ public class YotaTest {
 
     @Test
     public void getCustomerByPhoneNumberTest() throws JAXBException {
-        Specification.installSpecification(Specification.requestSpecXML(URL),
-                Specification.responseSpecOK200());
 
-        String requestBody = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+        String request = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                 "<ns3:Envelope xmlns:ns2=\"soap\" xmlns:ns3=\"http://schemas.xmlsoap.org/soap/envelope\">\n" +
                 "    <ns2:Header>\n" +
                 "        <authToken>" + token + "</authToken>\n" +
@@ -130,31 +120,20 @@ public class YotaTest {
                 "        <phoneNumber>" + phone + "</phoneNumber>\n" +
                 "    </ns2:Body>\n" +
                 "</ns3:Envelope>";
-        RestAssured.registerParser("text/plain", Parser.XML);
-//        // Создаем объект Header и Body
-//        FindCustomerHeadXML header = new FindCustomerHeadXML(token);
-//        FindCustomerBodyXML body = new FindCustomerBodyXML(phone);
-//
-//        Envelope request = new Envelope(header, body);
-//
-//        JAXBContext context = JAXBContext.newInstance(Envelope.class);
-//        Marshaller marshaller = context.createMarshaller();
-//        StringWriter writer = new StringWriter();
-//        marshaller.marshal(request, writer);
-//
-//        String xmlString = writer.toString();
-//        System.out.println(xmlString);
 
-        CustomerIdXML response = given()
-                //.body(xmlString)
-                .header("Content-Type", "application/xml; charset=UTF-8")
-                .body(requestBody)
+         String responseBody = given()
+                .header("Content-Type", "application/xml")
+                .body(request)
                 .log().all()
-                .when()
-                .post("customer/findByPhoneNumber")
-                .then().log().ifError()
-                .body("customerId", notNullValue())
-                .extract().as(CustomerIdXML.class);
+                .post("http://localhost:8090/customer/findByPhoneNumber")
+                .then().log().all()
+                .extract().asString();
+
+        // Парсим XML
+        XmlPath xmlPath = new XmlPath(responseBody);
+        String customerId = xmlPath.getString("Envelope.Body.customerId");
+
+        Assert.assertTrue("Customer ID should not be empty", !customerId.isEmpty());
     }
 
     //@Test

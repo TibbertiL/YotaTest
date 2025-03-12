@@ -16,22 +16,9 @@ public class Specification {
                 .build();
     }
 
-    public static RequestSpecification requestSpecXML(String url) {
-        return new RequestSpecBuilder()
-                .setBaseUri(url)
-                .setContentType(ContentType.XML)
-                .build();
-    }
-
     public static ResponseSpecification responseSpecOK200(){
         return new ResponseSpecBuilder()
                 .expectStatusCode(200)
-                .build();
-    }
-
-    public static ResponseSpecification responseSpecError400(){
-        return new ResponseSpecBuilder()
-                .expectStatusCode(400)
                 .build();
     }
 
